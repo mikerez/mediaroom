@@ -1,7 +1,7 @@
 #include "Debug.h"
 
-int gLogLevel = 2;
-int gLogMask = 0xFFFFFF;
-int gLogParam = -1;
+int g_log_level = 0;
+int g_log_mask = 0;
+int g_log_param = 0;
 
-LogRotate gLog("mediaroom");
+LogRotate g_log("mediaroom");

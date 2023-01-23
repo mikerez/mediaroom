@@ -29,9 +29,8 @@
 class LogRotate
 {
 public:
-    LogRotate(const char* fname, int pid = -1)
+    LogRotate(const char* fname)
         : filename(fname)
-        , procId(pid)
         , activeLog(nullptr)
         , oldLog(nullptr)
         , createTime(std::time(nullptr))
@@ -139,11 +138,6 @@ public:
         }
     }
 
-    void setPid(int pid)
-    {
-        procId = pid;
-    }
-
     void periodic_update()
     {
     }
@@ -153,7 +147,6 @@ public:
 private:
     std::string filename;
     std::string m_log_path = "./";
-    int procId;
     FILE * activeLog;
     std::string active_logname;
     FILE * oldLog;
@@ -169,8 +162,6 @@ private:
 
     std::string generateName(time_t time)
     {
-        return std::string(m_log_path + "/" + filename + (procId==-1?std::string(""):std::string("-")
-                                      + std::to_string(procId))
-                                      + "-" + std::to_string(static_cast<long>(time)) + ".log");
+        return std::string(m_log_path + "/" + filename + "-" + std::to_string(static_cast<long>(time)) + ".log");
     }
 };

@@ -12,16 +12,14 @@
 #include <time.h>
 #include <sys/time.h>
 
-#include <sqlite_orm/sqlite_orm.h>
-namespace sys = sqlite_orm;
-
 #include <map>
 #include <unordered_map>
 
-#define CONFIG_COLUMN(name) sys::make_column(#name, &Config::name)
-
 #include "Definitions.h"
 #include "Debug.h"
+#include <ConfigParser.h>
+
+#define CONFIG_COLUMN(name) ConfigParser::ConfigParam(Config::moduleName, #name, &Config::name)
 
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
 #include <sys/syscall.h>
@@ -212,9 +210,9 @@ class System
     struct Config
     {
         int pcap_collect_mode = 0;
-        int logLevel = 2;
-        int logMask = 0xFFFFFF;
-        int logParam = -1;
+        int log_level = 2;
+        int log_mask = 0xFFFFFF;
+        int log_param = -1;
         std::string logPath = "./";
         static const char *moduleName;
     };
@@ -225,17 +223,12 @@ public:
     {
         processArgs(argc, argv);
 
-        std::vector<Config> configs;
-        loadConfig(configs,  CONFIG_COLUMN(pcap_collect_mode), CONFIG_COLUMN(logLevel), CONFIG_COLUMN(logMask), CONFIG_COLUMN(logParam), CONFIG_COLUMN(logPath));
-        if (configs.empty()) {
-            configs.push_back(Config{});
-        }
+        loadConfig(CONFIG_COLUMN(pcap_collect_mode), CONFIG_COLUMN(logLevel), CONFIG_COLUMN(logMask), CONFIG_COLUMN(logParam), CONFIG_COLUMN(logPath));
 
-        config = configs[0];
-        gLogLevel = config.logLevel;
-        gLogMask = config.logMask;
-        gLogParam = config.logParam;
-        printf("logLevel=%d, logMask=0x%x, logParam=%d\n", gLogLevel, gLogMask, gLogParam);
+        g_log_level = config.log_level;
+        g_log_mask = config.log_mask;
+        g_log_param = config.log_param;
+        LOG_MESSAGE(LOG_SYSTEM, "log_level: %d, log_mask: 0x%x, log_param: %d\n", g_log_level, g_log_mask, g_log_param);
     }
     ~System() {}
 
@@ -250,6 +243,7 @@ public:
         dst = std::stol(str, 0, 0);
     }
 
+/* need this???
     template< typename T >
     static void convert(std::pair<T, T>& dst, const std::string& str)
     {
@@ -275,57 +269,30 @@ public:
             LOG_ERR(LOG_SYSTEM, "wrong pair parameter: %s\n", str.c_str());
         }
     }
+*/
 
     template<class Config, typename... Args>
     void loadConfig(std::vector<Config>& config, Args&&... columns)
     {
-        auto table = sys::make_table(Config::moduleName, std::forward<Args>(columns)...);
+        _config_parser.registerParam(Config::moduleName, std::forward<Args>(columns));
+        auto config_list = getConfigList();
 
         // some code to fill from command line
         auto cmdline = _cmdlineConfig.find(Config::moduleName);
         while (cmdline != _cmdlineConfig.end() && cmdline->first == Config::moduleName)
         {
             config.push_back(Config());
-            for (auto name : table.column_names())
+            for (auto item : config_list)
             {
-                auto param = cmdline->second.find(name);
-                if (param != cmdline->second.end())
-                {
-                    table.for_each_column([&,this](auto c) {
-                        if (c.name == name) {
-                            std::stringstream var;
-                            auto member_pointer = c.member_pointer;
-                            this->convert(config.back().*member_pointer, param->second);
-                        }
-                    });
+                auto param = cmdline->second.find(item->name.c_str());
+                if (param != cmdline->second.end()) {
+                    item->putValue(param->second);
                 }
             }
             cmdline++;
         }
     }
-/*
-    void logError(const char* format, ...)
-    {
-        va_list args;
-        va_start(args, format);
-        vfprintf(stderr, format, args);
-        va_end(args);
-        fflush(stderr);
-    }
 
-    void logMessage(const char* format, ...)
-    {
-        time_t t = std::time(0);
-        tm now;
-        localtime_r(&t, &now);
-        printf("%d.%.2d.%.2d %.2d:%.2d:%.2d ", now.tm_year + 1900, (now.tm_mon + 1), now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec);
-        va_list args;
-        va_start(args, format);
-        vprintf(format, args);
-        va_end(args);
-        fflush(stdout);
-    }
-*/
     bool processArgs(int argc, char** argv)
     {
         if(argc == 2 && std::strcmp(argv[1], "-v") == 0) {
@@ -335,7 +302,7 @@ public:
         else if (argc < 2) {
             return false;
         }
-        procId = atoi(argv[1]);
+        _config_file = argv[1];
         for (int i = 2; i < argc; i++) {
 
             std::string cmd(argv[i]);
@@ -373,11 +340,9 @@ public:
                         }
                     }
 
-                    LOG_LOG(LOG_SYSTEM, "setting parameter: %s(%s=%s)\n", module.c_str(), name.c_str(), value.c_str());
-                    printf("setting parameter: %s(%s=%s)\n", module.c_str(), name.c_str(), value.c_str());
+                    LOG_MESS(LOG_SYSTEM, "setting parameter: %s(%s=%s)\n", module.c_str(), name.c_str(), value.c_str());
                     props.insert({name, value});
                 }
-
 
                 _cmdlineConfig.insert(std::make_pair(module, props));
             }
@@ -388,7 +353,7 @@ public:
     bool idle()
     {
         //System::init_ts();
-        gLog.check();
+        g_log.check();
         return true;
     }
 
@@ -409,7 +374,10 @@ public:
 
     typedef std::unordered_map<std::string, std::string> Props;
     std::multimap<std::string, Props> _cmdlineConfig;
+private:
+    std::string _config_file;
+    ConfigParser _config_parser;
 public:
     Config config;  // seen for all
-    unsigned procId = 0;
+
 };

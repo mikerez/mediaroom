@@ -6,10 +6,10 @@
 
 #include "LogRotate.h"
 
-extern LogRotate gLog;
-extern int gLogLevel;
-extern int gLogMask;
-extern int gLogParam;
+extern LogRotate g_log;
+extern int g_log_level;
+extern int g_log_mask;
+extern int g_log_param;
 
 #ifndef BUILD_ASSERT
 template <bool> struct STATIC_ASSERTION_FAILURE;
@@ -23,13 +23,13 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 #ifndef NDEBUG
 
 #ifdef _WIN32
-#define LOG_DEBUG(module, format, ...) if ((1<<module)&gLogMask) gSystem->logMessage(#module ": " format, __VA_ARGS__)
-#define LOG_DEBUG1(module, format, ...) if (gLogLevel >= 1 && ((1<<module)&gLogMask)) { LOG_DEBUG(gLog, #module " " format); }
-#define LOG_DEBUG2(module, format, ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask)) { LOG_DEBUG(gLog, #module " " format); }
+#define LOG_DEBUG(module, format, ...) if ((1<<module)&g_log_mask) gSystem->logMessage(#module ": " format, __VA_ARGS__)
+#define LOG_DEBUG1(module, format, ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
+#define LOG_DEBUG2(module, format, ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
 #else
-#define LOG_DEBUG(module, format ...)  if (((1<<module)&gLogMask)) { LOG_DEBUG(gLog, #module " " format); }
-#define LOG_DEBUG1(module, format ...) if (gLogLevel >= 1 && ((1<<module)&gLogMask)) { LOG_DEBUG(gLog, #module ": " format); }
-#define LOG_DEBUG2(module, format ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask)) { LOG_DEBUG(gLog, #module ": " format); }
+#define LOG_DEBUG(module, format ...)  if (((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
+#define LOG_DEBUG1(module, format ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
+#define LOG_DEBUG2(module, format ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
 #endif
 
 #else
@@ -41,24 +41,24 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 #ifdef _WIN32
 
 #define DEBUG_EXIT() { exit(-1); }
-#define LOG_ERR(module, format, ...) LOG_ERROR(gLog, #module " " format, __VA_ARGS__)
-#define LOG_WARN(module, format, ...) LOG_WARNING(gLog, #module " " format, __VA_ARGS__)
-#define LOG_MESS(module, format, ...) LOG_MESSAGE(gLog, #module " " format, __VA_ARGS__)
-#define LOG_LVL0(module, format, ...) if (((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format, __VA_ARGS__)
-#define LOG_LVL1(module, format, ...) if (gLogLevel >= 1 && ((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format, __VA_ARGS__)
-#define LOG_LVL2(module, format, ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format, __VA_ARGS__)
-#define LOG_LVL2PARAM(module, param, format, ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask) && ((param) == gLogParam || gLogParam == -1)) LOG_DEBUG(gLog, #module " " format, __VA_ARGS__)
+#define LOG_ERR(module, format, ...) LOG_ERROR(g_log, #module " " format, __VA_ARGS__)
+#define LOG_WARN(module, format, ...) LOG_WARNING(g_log, #module " " format, __VA_ARGS__)
+#define LOG_MESS(module, format, ...) LOG_MESSAGE(g_log, #module " " format, __VA_ARGS__)
+#define LOG_LVL0(module, format, ...) if (((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format, __VA_ARGS__)
+#define LOG_LVL1(module, format, ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format, __VA_ARGS__)
+#define LOG_LVL2(module, format, ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format, __VA_ARGS__)
+#define LOG_LVL2PARAM(module, param, format, ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask) && ((param) == g_log_param || g_log_param == -1)) LOG_DEBUG(g_log, #module " " format, __VA_ARGS__)
 
 #else
 
 #define DEBUG_EXIT() { exit(-1); }
-#define LOG_ERR(module, format ...) LOG_ERROR(gLog, #module " " format)
-#define LOG_MESS(module, format ...) LOG_MESSAGE(gLog, #module " " format)
-#define LOG_WARN(module, format ...) LOG_WARNING(gLog, #module " " format)
-#define LOG_LVL0(module, format ...) if (((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format)
-#define LOG_LVL1(module, format ...) if (gLogLevel >= 1 && ((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format)
-#define LOG_LVL2(module, format ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask)) LOG_DEBUG(gLog, #module " " format)
-#define LOG_LVL2PARAM(module, param, format ...) if (gLogLevel >= 2 && ((1<<module)&gLogMask) && ((param) == gLogParam || gLogParam == -1)) LOG_DEBUG(gLog, #module " " format)
+#define LOG_ERR(module, format ...) LOG_ERROR(g_log, #module " " format)
+#define LOG_MESS(module, format ...) LOG_MESSAGE(g_log, #module " " format)
+#define LOG_WARN(module, format ...) LOG_WARNING(g_log, #module " " format)
+#define LOG_LVL0(module, format ...) if (((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format)
+#define LOG_LVL1(module, format ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format)
+#define LOG_LVL2(module, format ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) LOG_DEBUG(g_log, #module " " format)
+#define LOG_LVL2PARAM(module, param, format ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask) && ((param) == g_log_param || g_log_param == -1)) LOG_DEBUG(g_log, #module " " format)
 
 #endif
 
