@@ -20,16 +20,20 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 
 #define RT_ASSERT(a) { if(!(a)) { printf("\n"); fflush(stdout); *(char*)0=0; } }
 
+#define DEBUG_SYSTEM    0
+#define DEBUG_DETAILS   1
+#define DEBUG_CONFIG    2
+
 #ifndef NDEBUG
 
 #ifdef _WIN32
-#define LOG_DEBUG(module, format, ...) if ((1<<module)&g_log_mask) gSystem->logMessage(#module ": " format, __VA_ARGS__)
-#define LOG_DEBUG1(module, format, ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
-#define LOG_DEBUG2(module, format, ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
+#define DEBUG(module, format, ...) if ((1<<module)&g_log_mask) gSystem->logMessage(#module ": " format, __VA_ARGS__)
+#define DEBUG1(module, format, ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
+#define DEBUG2(module, format, ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
 #else
-#define LOG_DEBUG(module, format ...)  if (((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
-#define LOG_DEBUG1(module, format ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
-#define LOG_DEBUG2(module, format ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
+#define DEBUG(module, format ...)  if (((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module " " format); }
+#define DEBUG1(module, format ...) if (g_log_level >= 1 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
+#define DEBUG2(module, format ...) if (g_log_level >= 2 && ((1<<module)&g_log_mask)) { LOG_DEBUG(g_log, #module ": " format); }
 #endif
 
 #else

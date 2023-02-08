@@ -15,16 +15,18 @@
 #include <map>
 #include <unordered_map>
 
-#include "Definitions.h"
 #include "Debug.h"
 #include <ConfigParser.h>
 
-#define CONFIG_COLUMN(name) ConfigParser::ConfigParam(Config::moduleName, #name, &Config::name)
+#define CONFIG_COLUMN(name) ConfigParser::ConfigParam<decltype(&Config::name)>(Config::moduleName, #name, &Config::name)
+#define CONFIG_COLUMN_EXT(module, name) ConfigParser::ConfigParam<decltype(&module::Config::name)>(module::Config::moduleName, #name, &module::Config::name)
 
 #if __GLIBC__ == 2 && __GLIBC_MINOR__ < 30
 #include <sys/syscall.h>
 #define gettid() syscall(SYS_gettid)
 #endif
+
+#define M_VERSION 1.0
 
 inline unsigned long long rdtsc(void)
 {
@@ -223,12 +225,16 @@ public:
     {
         processArgs(argc, argv);
 
-        loadConfig(CONFIG_COLUMN(pcap_collect_mode), CONFIG_COLUMN(logLevel), CONFIG_COLUMN(logMask), CONFIG_COLUMN(logParam), CONFIG_COLUMN(logPath));
+        loadConfig<Config>(CONFIG_COLUMN(pcap_collect_mode),
+                           CONFIG_COLUMN(log_level),
+                           CONFIG_COLUMN(log_mask),
+                           CONFIG_COLUMN(log_param),
+                           CONFIG_COLUMN(logPath));
 
         g_log_level = config.log_level;
         g_log_mask = config.log_mask;
         g_log_param = config.log_param;
-        LOG_MESSAGE(LOG_SYSTEM, "log_level: %d, log_mask: 0x%x, log_param: %d\n", g_log_level, g_log_mask, g_log_param);
+        LOG_MESS(DEBUG_SYSTEM, "log_level: %d, log_mask: 0x%x, log_param: %d\n", g_log_level, g_log_mask, g_log_param);
     }
     ~System() {}
 
@@ -272,21 +278,20 @@ public:
 */
 
     template<class Config, typename... Args>
-    void loadConfig(std::vector<Config>& config, Args&&... columns)
+    void loadConfig(Args... columns)
     {
-        _config_parser.registerParam(Config::moduleName, std::forward<Args>(columns));
-        auto config_list = getConfigList();
+        _config_parser.registerParam(std::forward<Args>(columns)...);
+        auto & config_list = _config_parser.getConfigList();
 
         // some code to fill from command line
         auto cmdline = _cmdlineConfig.find(Config::moduleName);
         while (cmdline != _cmdlineConfig.end() && cmdline->first == Config::moduleName)
         {
-            config.push_back(Config());
-            for (auto item : config_list)
+            for (auto & item : config_list)
             {
-                auto param = cmdline->second.find(item->name.c_str());
-                if (param != cmdline->second.end()) {
-                    item->putValue(param->second);
+                auto param = cmdline->second.find(item->name);
+                if (item->prefix == Config::moduleName && param != cmdline->second.end()) {
+                    item->putValue(param->second.c_str());
                 }
             }
             cmdline++;
@@ -295,7 +300,7 @@ public:
 
     bool processArgs(int argc, char** argv)
     {
-        if(argc == 2 && std::strcmp(argv[1], "-v") == 0) {
+        if(argc == 2 && strcmp(argv[1], "-v") == 0) {
             printf("Version: %s\n", M_VERSION);
             return false;
         }
@@ -363,13 +368,8 @@ public:
     static uint64_t getClock()  // monotoic time
     {
         struct timespec ts;
-        clock_gettime(CLOCK_MONOTONIC_COARSE, &ts);
+        clock_gettime(CLOCK_MONOTONIC, &ts);
         return (uint64_t)ts.tv_sec*SYSTEM_CLOCK_SEC + ts.tv_nsec/((uint64_t)1000000000/SYSTEM_CLOCK_SEC);
-    }
-
-    static int get_free_cpu_core_number() {
-        std::lock_guard<std::mutex> lock(cpu_affinity_index_mutex);
-        return cpu_affinity_index++;
     }
 
     typedef std::unordered_map<std::string, std::string> Props;

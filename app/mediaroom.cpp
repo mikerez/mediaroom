@@ -9,8 +9,8 @@
 #include <stdlib.h>
 
 #include "System.h"
-//#include "Capture.h"
-#include "Stack.h"
+#include "Ip4.h"
+#include "Eth.h"
 
 struct Mediaroom
 {
@@ -62,13 +62,6 @@ void idle()
         FILE * file = fopen("main_stats.txt", "w");
         if(file)
         {
-            fprintf(file, "[Main thread]: pkts %lu, msg %lu, msgSip %lu, msgRtp %lu, msgIsup %lu, msgAstarta %lu\n",
-                    (uint64_t)pktsCount,
-                    (uint64_t)DecoderMessage::messageCount,
-                    (uint64_t)DecoderMessageSip::messageCount,
-                    (uint64_t)DecoderMessageRtp::messageCount,
-                    (uint64_t)DecoderMessageIsup::messageCount,
-                    (uint64_t)DecoderMessageAstarta::messageCount);
             fclose(file);
         }
     }
@@ -93,8 +86,7 @@ int main( int argc, char ** argv )
 #endif
 
         std::vector<Mediaroom::Config> configs;
-        system.loadConfig(configs,
-            sys::make_column("BULK", &Mediaroom::Config::driverBulk));
+        system.loadConfig<Mediaroom::Config>(CONFIG_COLUMN_EXT(Mediaroom, driverBulk));
         if (configs.empty()) {
             configs.push_back(Mediaroom::Config{});
         }

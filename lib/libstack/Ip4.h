@@ -5,7 +5,7 @@
 #include "HeaderIf.h"
 #include "Tcp.h"
 #include "Udp.h"
-#include "Sctp.h"
+#include "ss7/Sctp.h"
 #include <stdio.h>
 
 struct Ip4Hdr
