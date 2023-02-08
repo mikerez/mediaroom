@@ -1,0 +1,8 @@
+1. 4 spaces, not TAB
+2. TypeName, methodName, var_name, _private_member
+3. function, Class
+{
+}
+4. for, if {
+}
+5. always use {} after if and for

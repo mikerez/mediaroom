@@ -1,19 +1,20 @@
 // Copyright: https://github.com/mikerez/mediaroom/blob/main/LICENSE
+
 #pragma once
 
 #include "Debug.h"
 #include "Os.h"
-#ifdef UNIT_TESTS
-#include "FakeSystem.h"
-#else
 #include "System.h"
-#endif
-#include "Debug.h"
+#include "Config.h"
+
 #include "LibStack.h"
 #include "Eth.h"
 #include "ss7/Mtp.h"
-#include "ss7/Hdlc.h"
-#include "Config.h"
+#include "ss7/Isup.h"
+#include "ss7/Sccp.h"
+#include "ss7/Tcap.h"
+#include "ss7/M2ua.h"
+#include "ss7/Sctp.h"
 
 struct PacketDetails
 {
@@ -171,7 +172,7 @@ struct PacketDetails
             layers[layersCnt - 1].set(Type::Mtp, (uint16_t)((uint8_t*)&mtp->rl - (uint8_t*)mtp.data()), false);
             more3Layers = true;
         }
-        LOG_DEBUG1(LOG_DETAILS, "pushMtp: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&mtp->rl, 4, Debug::TextBuffer<4>()), flowHash, layers3Cnt);
+        DEBUG1(DEBUG_DETAILS, "pushMtp: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&mtp->rl, 4, Debug::TextBuffer<4>()), flowHash, layers3Cnt);
     }
 
     template<class STACK>
@@ -189,7 +190,7 @@ struct PacketDetails
             layers[layersCnt - 1].set(Type::Mtp3, (uint16_t)((uint8_t*)&mtp3->rl - (uint8_t*)mtp3.data()), false);
             more3Layers = true;
         }
-        LOG_DEBUG1(LOG_DETAILS, "pushMtp: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&mtp3->rl, 4, Debug::TextBuffer<4>()), flowHash, layers3Cnt);
+        DEBUG1(DEBUG_DETAILS, "pushMtp: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&mtp3->rl, 4, Debug::TextBuffer<4>()), flowHash, layers3Cnt);
     }
 
     template<class STACK>
@@ -250,7 +251,7 @@ struct PacketDetails
             layers[layersCnt - 1].set(Type::Isup, (uint16_t)((uint8_t*)&isup->cic - (uint8_t*)isup.data()), false);
             more4Layers = true;
         }
-        LOG_DEBUG1(LOG_DETAILS, "pushIsup: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&isup->cic, 2, Debug::TextBuffer<2>()), flowHash, layers3Cnt);
+        DEBUG1(DEBUG_DETAILS, "pushIsup: 0x%s, flowHash: %lX, layersCnt: %d\n", Debug::printHex((uint8_t*)&isup->cic, 2, Debug::TextBuffer<2>()), flowHash, layers3Cnt);
     }
 
     template<class STACK>
@@ -364,7 +365,7 @@ struct PacketDetails
             PacketDetails::Type type;
             uint32_t mask;
             const uint8_t* addrPtr = getLayerAddr(data, i, len, type, mask, mix);
-            //LOG_DEBUG(LOG_DETAILS, "isSrcLowerAddr: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
+            //DEBUG(DEBUG_DETAILS, "isSrcLowerAddr: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
             if (type > PacketDetails::Type::_Bidir && !mix) {
                 if (pos + len > CONFIG_FLOWADDR_SIZE - 1) {
                     break;  // too many layers for CONFIG_FLOWADDR_SIZE, count stats
@@ -387,7 +388,7 @@ struct PacketDetails
                     uint32_t srcAddr = ((*(uint32_t*)addrPtr) >> indStart) & shiftedMask;
                     uint32_t dstAddr = ((*(uint32_t*)addrPtr) >> indEnd) & shiftedMask;
 
-                    //LOG_DEBUG(LOG_DETAILS, "isSrcLowerAddr: %X, srcAddr: %X, dstAddr: %X, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)indStart, (int)indEnd);
+                    //DEBUG(DEBUG_DETAILS, "isSrcLowerAddr: %X, srcAddr: %X, dstAddr: %X, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)indStart, (int)indEnd);
                     if (srcAddr < dstAddr) {
                         return true;
                     }
@@ -411,7 +412,7 @@ struct PacketDetails
             PacketDetails::Type type;
             uint32_t mask;
             const uint8_t* addrPtr = getLayerAddr(packetData, i, len, type, mask, mix);
-            LOG_DEBUG(LOG_DETAILS, "fillAddresses: 0x%s, mix: %d, type: %d, mask %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
+            DEBUG(DEBUG_DETAILS, "fillAddresses: 0x%s, mix: %d, type: %d, mask %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
             if (!mix) {
                 if (pos + len > CONFIG_FLOWADDR_SIZE - 1) {
                     break;  // too many layers for CONFIG_FLOWADDR_SIZE, count stats
@@ -434,7 +435,7 @@ struct PacketDetails
                     uint32_t srcAddr = ((*(uint32_t*)addrPtr) >> indStart) & shiftedMask;
                     uint32_t dstAddr = ((*(uint32_t*)addrPtr) >> indEnd) & shiftedMask;
 
-                    LOG_DEBUG(LOG_DETAILS, "fillAddresses: %X, srcAddr: %X, dstAddr: %X, side: %d, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)side, (int)indStart, (int)indEnd);
+                    DEBUG(DEBUG_DETAILS, "fillAddresses: %X, srcAddr: %X, dstAddr: %X, side: %d, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)side, (int)indStart, (int)indEnd);
                     if (side) {  // src is lower
                         memcpy(addresses + pos, &srcAddr, len / 2);
                         memcpy(addresses + pos + len / 2, &dstAddr, len / 2);
@@ -463,7 +464,7 @@ struct PacketDetails
             PacketDetails::Type type;
             uint32_t mask;  // TODO: using mask for VLAN/MPLS if !mix
             const uint8_t* addrPtr = getLayerAddr(packetData, i, len, type, mask, mix);
-            LOG_DEBUG(LOG_DETAILS, "calcSide: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
+            DEBUG(DEBUG_DETAILS, "calcSide: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
             if (!mix) {
                 if (pos + len > CONFIG_FLOWADDR_SIZE - 1) {
                     break;  // too many layers for CONFIG_FLOWADDR_SIZE, count stats
@@ -486,7 +487,7 @@ struct PacketDetails
                     uint32_t srcAddr = ((*(uint32_t*)addrPtr) >> indStart) & shiftedMask;
                     uint32_t dstAddr = ((*(uint32_t*)addrPtr) >> indEnd) & shiftedMask;
 
-                    LOG_DEBUG(LOG_DETAILS, "calcSide: %X, srcAddr: %X, dstAddr: %X, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)indStart, (int)indEnd);
+                    DEBUG(DEBUG_DETAILS, "calcSide: %X, srcAddr: %X, dstAddr: %X, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)indStart, (int)indEnd);
                     if (srcAddr < dstAddr) {
                         return 0;
                     }
@@ -511,7 +512,7 @@ struct PacketDetails
             PacketDetails::Type type;
             uint32_t mask;  // TODO: using mask for VLAN/MPLS if !mix
             const uint8_t* addrPtr = getLayerAddr(packetData, i, len, type, mask, mix);
-            LOG_DEBUG(LOG_DETAILS, "cmpAddresses: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
+            DEBUG(DEBUG_DETAILS, "cmpAddresses: 0x%s, mix: %d, type: %d, mask: %x\n", Debug::printHex(addrPtr, len, Debug::TextBuffer<32>()), (int)mix, (int)type, (int)mask);
             if (!mix) {
                 if (pos + len > CONFIG_FLOWADDR_SIZE - 1) {
                     break;  // too many layers for CONFIG_FLOWADDR_SIZE, count stats
@@ -540,7 +541,7 @@ struct PacketDetails
                     uint32_t srcAddr = ((*(uint32_t*)addrPtr) >> indStart) & shiftedMask;
                     uint32_t dstAddr = ((*(uint32_t*)addrPtr) >> indEnd) & shiftedMask;
 
-                    LOG_DEBUG(LOG_DETAILS, "cmpAddresses: %X, srcAddr: %X, dstAddr: %X, side: %d, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)side, (int)indStart, (int)indEnd);
+                    DEBUG(DEBUG_DETAILS, "cmpAddresses: %X, srcAddr: %X, dstAddr: %X, side: %d, indStart: %d, indEnd: %d\n", (int)shiftedMask, (int)srcAddr, (int)dstAddr, (int)side, (int)indStart, (int)indEnd);
                     if (side) {  // src is lower
                         if (memcmp(addresses + pos, &srcAddr, len / 2) != 0) {
                             return false;

@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <memory>
+#include <string.h>
+#include "Debug.h"
 
 class ConfigParser
 {
@@ -27,7 +30,7 @@ class ConfigParser
             if (*ptr == '#') {
                 continue;
             }
-            char[128] name;
+            char name[128];
             sscanf(ptr, "%127s", name);
             while (*ptr == ' ' || *ptr == '\t') {
                 ++ptr;
@@ -48,7 +51,7 @@ class ConfigParser
                 ++ptr;
                 dquota = true;
             }
-            char[1024-128] value;
+            char value[1024-128];
             unsigned size = 0;
             bool backslash = false;
             while (*ptr && !(*ptr == '\'' && quota) && (!(*ptr == '\"' && dquota) || backslash) && size < 1024-128-1) {
@@ -71,8 +74,8 @@ class ConfigParser
     void putConfig(const char* name, const char* value)
     {
         for (int i=0; i<_config_list.size(); ++i) {
-            if (strcmp(_config_list[i].name, name) == 0) {
-                _config_list[i].putValue(value);
+            if (strcmp(_config_list[i]->name.c_str(), name) == 0) {
+                _config_list[i]->putValue(value);
             }
         }
     }
@@ -82,41 +85,49 @@ class ConfigParser
         ConfigParamBase() {}
         virtual ~ConfigParamBase() {}
         virtual bool putValue(const char* value) = 0;
+
+        std::string prefix;
         std::string name;
     };
 
-    template<class TYPE>
+    template<typename  TYPE_PTR>
     struct ConfigParam: public ConfigParamBase
     {
-        ConfigParam(const char* prefix, const char* param, TYPE* value)
+        ConfigParam(const char* prefix, const char* param, TYPE_PTR value)
         {
-            name = prefix + param;
-            parameter = value;
+            this->prefix = prefix;
+            this->name = param;
+            this->value = value;
         }
         ~ConfigParam() {}
-        TYPE* value;  // must be global var!
-        bool putValue(const char* value) {
-            std::istringstream(value) >> *value;
+        bool putValue(const char* new_value) {
+            //std::stringstream stream(new_value);
+            //stream >> value;
+
         }
+
+        TYPE_PTR value;  // must be global var!
     };
 
-    template <typename T>
-    void registerParam(T t)
-    {
-        _config_list.push_back(std::make_unique<T>(t));
+    void registerParam() {}
+
+    template <typename Head, typename ...Tail>
+    void registerParam(Head & h, Tail &... t) {
+        _config_list.push_back(std::make_unique<Head>(h));
+        registerParam(t...);
     }
 
-    template<typename T, typename... Args>
-    void registerParam(T t, Args... args)
+    template<typename... Args>
+    void registerParam(Args... args)
     {
-        registerParam(args...) ;
+        registerParam(args...);
     }
 
-    auto getConfigList() {
+    auto & getConfigList() {
         return _config_list;
     }
 
   private:
-    std::vector<std::unique_ptr<ConfigParamBase*>> _config_list;
+    std::vector<std::unique_ptr<ConfigParamBase>> _config_list;
 
 };

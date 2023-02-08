@@ -11,14 +11,14 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-//#define LOG_CONSOLE
+#define LOG_CONSOLE
 #ifdef LOG_CONSOLE
 #define LOG_DEBUG(log, a...)   { fprintf(log, a); fprintf(stdout, a); }
 #define LOG_MESSAGE(log, a...) { log.printTime(log); fprintf(log, a); if(LogRotate::flush_logs) fflush(log); log.printTime(stdout); fprintf(stdout, "MESS: " a); if(LogRotate::flush_logs) fflush(stdout); }
 #define LOG_WARNING(log, a...) { log.printTime(log); fprintf(log,"WARNING: " a); fflush(log); log.printTime(stdout); fprintf(stdout, "WARNING: " a); fflush(stdout); }
 #else
-#define LOG_DEBUG(log, a...)   { log.printTime(log); fprintf(log,"WARNING: " a); if(LogRotate::flush_logs) fflush(log);  }
-#define LOG_MESSAGE(log, a...) { log.printTime(log); fprintf(log,"WARNING: " a); if(LogRotate::flush_logs) fflush(log);  }
+#define LOG_DEBUG(log, a...)   { fprintf(log, a); fprintf(stdout, a); if(LogRotate::flush_logs) fflush(log); }
+#define LOG_MESSAGE(log, a...) { log.printTime(log); fprintf(log, a); if(LogRotate::flush_logs) fflush(log); }
 #define LOG_WARNING(log, a...) { log.printTime(log); fprintf(log,"WARNING: " a); if(LogRotate::flush_logs) fflush(log); }
 #endif
 #define LOG_ERROR(log, a...)   { log.printTime(log); fprintf(log,"ERROR: " a);  if(LogRotate::flush_logs) fflush(log); log.printTime(stderr); fprintf(stderr,"ERROR: " a); if(LogRotate::flush_logs) fflush(stderr); }
