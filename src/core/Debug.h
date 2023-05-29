@@ -20,9 +20,12 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 
 #define RT_ASSERT(a) { if(!(a)) { printf("\n"); fflush(stdout); *(char*)0=0; } }
 
-#define DEBUG_SYSTEM    0
-#define DEBUG_DETAILS   1
-#define DEBUG_CONFIG    2
+#define DEBUG_SYSTEM            0
+#define DEBUG_DETAILS           1
+#define DEBUG_CONFIG            2
+#define DEBUG_SHARED_SERVER     3
+#define DEBUG_SHARED_CLIENT     4
+#define DEBUG_APP_EXAMPLE       5
 
 #ifndef NDEBUG
 
