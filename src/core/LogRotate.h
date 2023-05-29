@@ -142,7 +142,7 @@ public:
     {
     }
 
-    static const bool flush_logs = false;
+    static const bool flush_logs = true;
     uint64_t log_write_count = 0;
 private:
     std::string filename;

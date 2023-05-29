@@ -7,10 +7,13 @@
 #include <future>
 #include <atomic>
 #include <stdlib.h>
+#include <time.h>
 
 #include "System.h"
 #include "Ip4.h"
 #include "Eth.h"
+#include "../libshared/SharedServer.h"
+#include "PacketPtr.h"
 
 struct Mediaroom
 {
@@ -49,6 +52,7 @@ BOOL ctrlHandler(DWORD fdwCtrlType)
 #include <signal.h>
 void ctrlHandler(int signum)
 {
+    gExit = true;
 }
 #endif
 
@@ -66,8 +70,6 @@ void idle()
         }
     }
 }
-
-#include "PacketPtr.h"
 
 int main( int argc, char ** argv )
 {
@@ -116,6 +118,30 @@ int main( int argc, char ** argv )
     */
 
 
+    srand(time(nullptr));
+    size_t lower = 10, highest = 200;
+    SharedServer ss;
+    auto res = ss.create();
+    while(res && !gExit) {
+        if(ss.hasClients())
+        {
+            size_t size = rand() % (highest - lower + 1) + lower;
+            uint8_t * data = new uint8_t(size);
+            for(auto i = 0; i < size; i++)
+            {
+                data[i] = rand() % 255;
+            }
+
+            LOG_MESS(DEBUG_SYSTEM, "Gen data block with size %li\n", size);
+
+            if(!ss.send(101, data, size))
+            {
+                LOG_WARN(DEBUG_SYSTEM, "Failed to push to SHMEM!\n");
+            }
+            delete data;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    }
 
     }
     catch (const std::exception& ex) {
