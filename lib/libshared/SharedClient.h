@@ -1,6 +1,7 @@
 #include "SharedSocket.h"
 
 #include "netinet/in.h"
+#include <cstring>
 
 class SharedClient: public SharedSocket
 {

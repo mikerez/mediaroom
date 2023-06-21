@@ -1,4 +1,6 @@
 ﻿#include "SharedSocket.h"
+#include "SharedCycleBuffer.h"
+
 
 #include <map>
 #include <unordered_map>
@@ -20,7 +22,7 @@ public:
 
     static const size_t default_shmem_size;
 private:
-    SharedIO * _io;
+    SharedCycleBuffer * _io;
     std::string _name;
     uint64_t _id;
     ss_direction _dir = ss_direction::SS_UNDEFINED;

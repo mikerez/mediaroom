@@ -2,10 +2,12 @@
 
 #pragma once
 
+#include <map>
+
 #include "LibStack.h"
 #include "PacketAccum.h"
 #include "AllocatorList.h"
-#include <map>
+#include "Tcp.h"
 
 #define TCP_ACCUM_ERROR(a...)           { LOG_ERR(LOG_TCP_ACCUM, a); }
 #define TCP_ACCUM_DEBUG(a...)           {} //{ LOG_DEBUG(LOG_TCP_ACCUM, a); }

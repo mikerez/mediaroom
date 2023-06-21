@@ -1,17 +1,14 @@
-// Copyright Tribit Ltd, Nizhny Novgorod, tribit.ru
+// Copyright: https://github.com/mikerez/mediaroom/blob/main/LICENSE
 
 #pragma once
 
 #include <sys/types.h>
-
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-
 #include <string>
 #include <stdexcept>
-
 
 #ifdef WIN32
 #include <io.h>
@@ -23,8 +20,6 @@
 #include <unistd.h>
 #endif
 
-#include "CycleBuffer.h"
-
 class SharedIO
 {
 
@@ -34,9 +29,6 @@ public:
     }
     SharedIO(const char* filename, size_t length = 0, bool create = false)
     {
-
-
-//HZ        _cb = *(new CycleBuffer());
 #ifdef WIN32
         errno_t err =_sopen_s(&_fd, "text.txt", _O_RDWR | _O_CREAT, _SH_DENYNO,
             _S_IREAD | _S_IWRITE);/*{
@@ -71,10 +63,6 @@ public:
             }
         }
 
-        if (length <= sizeof(CycleBufferDescriptor)+4096) {
-            throw std::logic_error("too small length for SharedIO");
-        }
-
 #ifdef WIN32
         if (!(hMMFile = CreateFileMapping(INVALID_HANDLE_VALUE,
             NULL,
@@ -103,19 +91,9 @@ public:
             /*throw std::logic_error*/ printf("mlock failed\n");
         }
 #endif
-        _cb.set((uint8_t*)_memory, _length);
-        if (!create) {
-            if (_length < sizeof(CycleBufferDescriptor) || _cb->size != _length - sizeof(CycleBufferDescriptor)) {
-                throw std::logic_error("wrong CycleBuffer size when opening: " + std::to_string(_cb.size()) + " != " + std::to_string(_length - sizeof(CycleBufferDescriptor)));
-            }
-        }
-
-        if(create) {  // empty
-            _cb.clear();
-        }
     }
 
-    ~SharedIO()
+    virtual ~SharedIO()
     {
         if (_fd != -1) {
 #ifdef WIN32
@@ -130,6 +108,8 @@ public:
         }
     }
 
+    SharedIO(const SharedIO &io) = delete;
+
     SharedIO(SharedIO&& io)
     {
         _fd = io._fd;
@@ -138,8 +118,6 @@ public:
         io._length = 0;
         _memory = io._memory;
         io._memory = nullptr;
-        _cb = io._cb;
-        io._cb = nullptr;
     }
 
     SharedIO& operator=(SharedIO&& io)
@@ -150,8 +128,6 @@ public:
         io._length = 0;
         _memory = io._memory;
         io._memory = nullptr;
-        _cb = io._cb;
-    //    io._cb = nullptr;
         return *this;
     }
 
@@ -164,16 +140,10 @@ public:
 #endif
     }
 
-//    uint8_t* getMem()
-//    {
-//        return (uint8_t*)_memory;
-//    }
-
-    CycleBuffer* operator ->()
+    uint8_t* getMem()
     {
-        return &_cb;
+        return (uint8_t*)_memory;
     }
-
 private:
 #ifdef WIN32
     HANDLE  hFile;
@@ -182,5 +152,4 @@ private:
     int _fd;
     size_t _length;
     void* _memory;
-    CycleBuffer _cb;
 };

@@ -2,6 +2,7 @@
 
 #include "../lib/libshared/SharedClient.h"
 #include "../src/core/Debug.h"
+#include "../lib/libshared/SharedCycleBuffer.h"
 
 #include <unordered_map>
 #include <stdlib.h>
@@ -53,7 +54,7 @@ int main(int argc, char *argv[])
     sc.waitAck(cmd);
     LOG_MESS(DEBUG_APP_EXAMPLE, "Recv ACK in BIND ...\n");
 
-    SharedIO * io = new SharedIO(shmem_name.c_str(), shmem_size, false);
+    SharedCycleBuffer * io = new SharedCycleBuffer(shmem_name.c_str(), shmem_size, false);
 
     auto time_start = std::time(nullptr);
     while(true)

@@ -14,6 +14,7 @@
 #include "Eth.h"
 #include "../libshared/SharedServer.h"
 #include "PacketPtr.h"
+#include "../libshared/SharedMap.h"
 
 struct Mediaroom
 {
@@ -116,6 +117,20 @@ int main( int argc, char ** argv )
     Eth<Pkt> pkt(ptr);
     stack.putEth(move(pkt));
     */
+
+    // Example of using
+    uint64_t val;
+    SharedMap<uint64_t, uint64_t> sm_write("/dev/shm/shm_map_.shm", 10000, true);
+    auto res_ins = sm_write.insert(1, 1);
+    res_ins = sm_write.insert(2, 2);
+    sm_write.erase(2);
+    res_ins = sm_write.insert(3, 3);
+
+    SharedMap<uint64_t, uint64_t> sm_read("/dev/shm/shm_map_.shm");
+    auto sm_sec_res = sm_read.find(3, val);
+    if(sm_sec_res)
+        printf("[RES]: %lu\n", val);
+    fflush(stdout);
 
 
     srand(time(nullptr));
