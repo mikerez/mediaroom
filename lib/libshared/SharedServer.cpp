@@ -1,7 +1,7 @@
 #include "SharedServer.h"
 
 #include "sys/ioctl.h"
-#include "string.h"
+#include <cstring>
 
 const size_t SharedCtx::default_shmem_size = 1024 * 1024 * 100;
 
@@ -419,7 +419,7 @@ shm_id_t SharedServer::getShmemIndex()
 SharedCtx::SharedCtx(const std::string &name, const shm_id_t & id, const ss_direction &side, const size_t & shm_size):
     _io(nullptr), _name(name), _id(id), _dir(side)
 {
-    _io = new SharedIO(name.c_str(), shm_size, true);
+    _io = new SharedCycleBuffer(name.c_str(), shm_size, true);
 }
 
 SharedCtx::~SharedCtx()
