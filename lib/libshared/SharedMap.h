@@ -2,71 +2,53 @@
 
 #pragma once
 
-#include "SharedIO.h"
-#include "AllocatorList.h"
+#include <boost/interprocess/containers/map.hpp>
+#include <boost/interprocess/allocators/allocator.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/range/algorithm/equal_range.hpp>
 
-#include <map>
-#include <mutex>
+#include "SharedIO.h"
+
+using namespace boost::interprocess;
 
 template<typename KEY_T, typename VALUE_T>
-class SharedMap : public SharedIO
+class SharedMultimap : public SharedIO
 {
 public:
-    typedef AllocatorList<std::_Rb_tree_node<std::pair<const KEY_T, VALUE_T>>> alloc_t;
-    typedef std::map<KEY_T, VALUE_T, std::less<KEY_T>,alloc_t>                 shmMap;
-    typedef typename shmMap::iterator                                          shmMapIt;
+    typedef std::pair<const KEY_T, VALUE_T> Node;
+    typedef allocator<Node, managed_shared_memory::segment_manager> Allocator;
+    typedef multimap<KEY_T, VALUE_T, std::less<KEY_T>, Allocator> shmMultimap;
 
-    SharedMap(const char * filename, size_t length = 0, bool create = false):
-        SharedIO(filename, length, create),
-        _alloc(alloc_t(getMem() + _shared_mem_offset, length - _shared_mem_offset, create))
+    SharedMultimap() = delete;
+    SharedMultimap(const std::string shm_name, const size_t & length = 0, bool create = false):
+        SharedIO(shm_name.c_str(), length, create),
+        _alloc(getSegment().get_segment_manager())
     {
-
-        size_t offset = 0;
         if(create) {
-            _lock = new (getMem() + offset) std::mutex();
-            offset += sizeof (std::mutex);
-            _map = new (getMem() + offset) shmMap(_alloc);
-            offset += sizeof (shmMap);
+            _mmap = offset_ptr<shmMultimap>(getSegment().template construct<shmMultimap>(std::string(shm_name + "_map").c_str())(std::less<KEY_T>(), _alloc));
         }
         else {
-            _lock = (std::mutex *)(getMem() + offset);
-            offset += sizeof (std::mutex);
-            _map = (shmMap *)(getMem() + offset);
-            offset += sizeof (shmMap);
+            _mmap = offset_ptr<shmMultimap>(getSegment().template find<shmMultimap>(std::string(shm_name + "_map").c_str()).first);
         }
     }
+    SharedMultimap(const SharedMultimap & sm) = delete;
 
-    SharedMap(const SharedMap & sm) = delete;
-    SharedMap(SharedMap && sm): SharedIO(std::move(sm)) { }
-    ~SharedMap()
+    void insert(Node node)
     {
+        _mmap->insert(node);
     }
 
-    bool find(KEY_T key, VALUE_T & val)
+    void erase(const KEY_T & key)
     {
-        std::lock_guard<std::mutex> lock(*_lock);
-        auto it_res = _map->find(key);
-        if(it_res != _map->end())
-        {
-            val = it_res->second;
-        }
-        return it_res != _map->end() ? true : false;
+        _mmap->erase(key);
     }
 
-    bool insert(KEY_T key, VALUE_T value)
+    std::pair<typename shmMultimap::iterator, typename shmMultimap::iterator> find(const KEY_T & key)
     {
-        std::lock_guard<std::mutex> lock(*_lock);
-        return _map->insert({ key, value }).second;
+        return _mmap->equal_range(key);
     }
 
-    void erase(KEY_T key)
-    {
-        std::lock_guard<std::mutex> lock(*_lock);
-        _map->erase(key);
-    }
 private:
-    const size_t _shared_mem_offset = sizeof (std::mutex) + sizeof (shmMap);
-    alloc_t _alloc;
-    std::mutex * _lock;
-    shmMap * _map;
+    Allocator _alloc;
+    offset_ptr<shmMultimap> _mmap;
 };

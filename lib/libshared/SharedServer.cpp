@@ -276,7 +276,8 @@ bool SharedServer::hasClients() const
 bool SharedServer::newRChan(const std::string & prefix, const size_t & shm_size)
 {
     auto id = getShmemIndex();
-    std::string name = "/dev/shm/" + prefix + "_r_" + std::to_string(id);
+    //std::string name = "/dev/shm/" + prefix + "_r_" + std::to_string(id);
+    std::string name = "shm_" + prefix + "_r_" + std::to_string(id);
 
     try {
         // NOTE: Invert direction for server side
@@ -419,7 +420,7 @@ shm_id_t SharedServer::getShmemIndex()
 SharedCtx::SharedCtx(const std::string &name, const shm_id_t & id, const ss_direction &side, const size_t & shm_size):
     _io(nullptr), _name(name), _id(id), _dir(side)
 {
-    _io = new SharedCycleBuffer(name.c_str(), shm_size, true);
+    _io = new SharedCircularBuffer(name.c_str(), shm_size, true);
 }
 
 SharedCtx::~SharedCtx()
@@ -444,7 +445,7 @@ bool SharedCtx::push(uint8_t *data, size_t size)
 {
     if(_dir == ss_direction::SS_WRITE)
     {
-        return (*_io)->write1(data, size);
+        return (*_io).push(data, size);
     }
     else
     {
@@ -456,7 +457,7 @@ const uint8_t * SharedCtx::pop(size_t & size)
 {
     if(_dir == ss_direction::SS_READ)
     {
-        return (*_io)->read1(*(uint16_t *)&size);
+        return (*_io).pop(*(uint16_t *)&size);
     }
     else
     {

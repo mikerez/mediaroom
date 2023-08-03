@@ -6,18 +6,19 @@
 
 #include "LibStack.h"
 #include "PacketAccum.h"
-#include "AllocatorList.h"
 #include "Tcp.h"
+#include "../libshared/SharedMap.h"
 
 #define TCP_ACCUM_ERROR(a...)           { LOG_ERR(LOG_TCP_ACCUM, a); }
 #define TCP_ACCUM_DEBUG(a...)           {} //{ LOG_DEBUG(LOG_TCP_ACCUM, a); }
 #define TCP_ACCUM_ASSERT(expr, a...)    { if(!(expr)) { TCP_ACCUM_ERROR(a); } }
 //#define FULL_CHECK_NODES
 
-template<class PKT, int BLOCKCNT = 10, class ALLOCATOR = std::allocator<int>, bool REQUIRE_PAGEALIGN = false>
+template<class PKT, int BLOCKCNT = 32, class ALLOCATOR = std::allocator<int>, bool REQUIRE_PAGEALIGN = false>
 class TcpAccum
 {
     static const size_t MAX_CACHED_PKTS = 1000;
+    static const size_t DEFAULT_TCP_BLOCK_SIZE = 256;
 
 public:
     ~TcpAccum()
@@ -311,30 +312,17 @@ public:
         #endif  // FULL_CHECK_NODES
 
 #undef TCP_ACCUM_CHECK
-
         return true;
     }
 
 #pragma pack(1)
-    struct Entry
-    {
-        typename PKT::BasePtr::pointer packet;
-        uint32_t seq;
-    }
-#ifndef _WIN32
-    __attribute__((packed))
-#endif
-        ;
-#pragma pack()
-
-#pragma pack(1)
     typedef struct
     {
-        Entry entries[BLOCKCNT];
-        size_t count = 0;
-        size_t read  = 0;
-        uint32_t lastSeq;
-        uint32_t unused;
+        uint8_t  tcp_data[DEFAULT_TCP_BLOCK_SIZE * BLOCKCNT];
+        size_t   data_len = 0;
+        size_t   read = 0;
+        bool     is_complete = false;
+        uint64_t last_data_ts = 0;
     }
 #ifndef _WIN32
     __attribute__((packed))

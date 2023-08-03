@@ -15,6 +15,7 @@
 #include "../libshared/SharedServer.h"
 #include "PacketPtr.h"
 #include "../libshared/SharedMap.h"
+#include "../libshared/SharedCycleBuffer.h"
 
 struct Mediaroom
 {
@@ -74,6 +75,12 @@ void idle()
 
 int main( int argc, char ** argv )
 {
+    std::cout << "Using Boost "
+              << BOOST_VERSION / 100000     << "."  // major version
+              << BOOST_VERSION / 100 % 1000 << "."  // minor version
+              << BOOST_VERSION % 100                // patch level
+              << std::endl;
+
     try {
         System system(argc, argv);  // todo: check errors in this object?
 
@@ -112,25 +119,11 @@ int main( int argc, char ** argv )
     Ip4<PktBase> z = y.rebase();
     RT_ASSERT(z->protocol == 2);  // test nested cast
     
-/*
-    Packet* ptr = allocPacket(1500);
-    Eth<Pkt> pkt(ptr);
-    stack.putEth(move(pkt));
-    */
 
-    // Example of using
-    uint64_t val;
-    SharedMap<uint64_t, uint64_t> sm_write("/dev/shm/shm_map_.shm", 10000, true);
-    auto res_ins = sm_write.insert(1, 1);
-    res_ins = sm_write.insert(2, 2);
-    sm_write.erase(2);
-    res_ins = sm_write.insert(3, 3);
+    bool work = true;
+    auto shared_cycle_buff_test_run = [&work](std::string shm_cb_name) {
 
-    SharedMap<uint64_t, uint64_t> sm_read("/dev/shm/shm_map_.shm");
-    auto sm_sec_res = sm_read.find(3, val);
-    if(sm_sec_res)
-        printf("[RES]: %lu\n", val);
-    fflush(stdout);
+    };
 
 
     srand(time(nullptr));
@@ -155,7 +148,7 @@ int main( int argc, char ** argv )
             }
             delete data;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
     }

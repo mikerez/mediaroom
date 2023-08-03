@@ -24,9 +24,9 @@ public:
     {
     }
 
-    CycleBuffer(uint8_t* buffer, size_t size = 0, bool freeMem = false, CycleBufferDescriptor* desc = nullptr)
+    CycleBuffer(uint8_t* buffer, size_t size = 0, bool freeMem = false)
     {
-        set(buffer, size, freeMem, desc);
+        set(buffer, size, freeMem);
     }
 
     ~CycleBuffer()
@@ -36,12 +36,12 @@ public:
         }
     }
 
-    void set(uint8_t* buffer, size_t size, bool freeMem = false, CycleBufferDescriptor* desc = nullptr )
+    void set(uint8_t * buffer, const size_t & size, const bool & freeMem = false)
     {
         _buffer = buffer;
         _freeMem = freeMem;
-        _size = _desc ? size : size - sizeof(CycleBufferDescriptor);
-        _desc = desc ? desc : (CycleBufferDescriptor*)((uint8_t*)_buffer + size - sizeof(CycleBufferDescriptor));
+        _size = size - sizeof(CycleBufferDescriptor);
+        _desc = (CycleBufferDescriptor*)(_buffer + size - sizeof(CycleBufferDescriptor));
         _desc->_tmp_head = -1;  // flush write_begin.write_end
         _desc->_tmp_tail = -1;  // flush read_begin.read_end
     }
@@ -71,53 +71,6 @@ public:
         return buffer;
     }
 
-/*    this methods are not perfect since read() doesn't preserve data during (after) read
-
-    bool write(const uint8_t* data, uint16_t len)
-    {
-        size_t pos = _desc->head + len;
-        if ((_desc->tail <= _desc->head && pos >= _desc->size + _desc->tail) ||
-            //---------TxxxxxxxxxxxxxxxH---------------
-            (_desc->tail > _desc->head && pos >= _desc->tail)) {
-            //xxxxxxxxxxxxH-----------Txxxxxxxxxxxxxxxx
-            return false;
-        }
-        if (pos < _desc->size) {  // dont let _head be equal to _desc->size
-            memcpy(_buffer + _desc->head, data, len);
-            _desc->head = pos;
-            return true;
-        } else {
-            pos -= _desc->size;
-            memcpy(_buffer + _desc->head, data, len - pos);
-            memcpy(_buffer, data + (len - pos), pos);
-            _desc->head = pos;
-            return true;
-        }
-    }
-
-    const uint8_t* read(uint16_t& len)
-    {
-        size_t pos = _desc->tail + len;
-        if ((_desc->tail <= _desc->head && pos > _desc->head) ||
-            //---------TxxxxxxxxxxxxxxxH---------------
-            (_desc->tail > _desc->head && pos > _desc->size + _desc->head)) {
-            //xxxxxxxxxxxxH-----------Txxxxxxxxxxxxxxxx
-            return nullptr;
-        }
-        if (pos < _desc->size) {  // dont let _tail be equal to _desc->size
-            uint8_t* ret = _buffer + _desc->tail;
-            _desc->tail = pos;
-            return ret;
-        } else {
-            pos -= _desc->size;
-            len -= pos;
-            uint8_t* ret = _buffer + _desc->tail;
-            _desc->tail = 0;
-            return ret;
-        }
-    }
-    // never mix write() / write1() / write1_begin() calls
-*/
     bool write1(const uint8_t* data, uint16_t len)
     {
         size_t pos = _desc->head + 2;
@@ -143,7 +96,7 @@ public:
         return true;
     }
 
-    const uint8_t* read1(uint16_t& len)
+    const uint8_t * read1(uint16_t & len)
     {
         size_t pos = _desc->tail + 2;
         // if len is written (seen by tail) this means data is completely written too
@@ -295,7 +248,7 @@ public:
 
 private:
     CycleBufferDescriptor* _desc;
-    uint8_t* _buffer;
+    uint8_t * _buffer;
     size_t _size;
     bool _freeMem;
 };
