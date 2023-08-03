@@ -224,11 +224,13 @@ bool SharedServer::bindChan(const shm_id_t &id, const hash_t & hash)
         {
             sh_ctx_found = true;
             // TODO: Can shmem have multiple conditions???
+            _ctx_map_hash_mutex.lock();
             auto hash_ctx_map_it = _ctx_map_hash.find(hash);
             if(hash_ctx_map_it == _ctx_map_hash.end())
             {
                 _ctx_map_hash.emplace(hash, it->second);
                 _shmid_hash_map.emplace(id, std::vector<hash_t>() = { hash });
+                _ctx_map_hash_mutex.unlock();
 
                 ss_cmd ack = { (uint64_t)ss_proto::SS_ACK, id };
                 writeData(_curr_handling_sock, (uint8_t *)&ack, sizeof (ss_cmd));
@@ -236,6 +238,7 @@ bool SharedServer::bindChan(const shm_id_t &id, const hash_t & hash)
             }
             else
             {
+                _ctx_map_hash_mutex.unlock();
                 ss_cmd ack = { (uint64_t)ss_proto::SS_NACK, id };
                 writeData(_curr_handling_sock, (uint8_t *)&ack, sizeof (ss_cmd));
                 break;
@@ -259,9 +262,9 @@ void SharedServer::stop()
 
 bool SharedServer::send(const hash_t &hash, uint8_t *data, const size_t &size)
 {
+    std::lock_guard<std::mutex> lock(_ctx_map_hash_mutex);
     auto it = _ctx_map_hash.find(hash);
-    if(it != _ctx_map_hash.end() && it->second->getDirection() == ss_direction::SS_WRITE)
-    {
+    if(it != _ctx_map_hash.end() && it->second->getDirection() == ss_direction::SS_WRITE) {
         return it->second->push(data, size);
     }
 
@@ -334,15 +337,15 @@ bool SharedServer::closeChan(const shm_id_t &id)
         }
     }
 
+    _ctx_map_hash_mutex.lock();
     auto it = _shmid_hash_map.find(id);
-    if(it != _shmid_hash_map.end())
-    {
-        for(auto & hash : it->second)
-        {
+    if(it != _shmid_hash_map.end()) {
+        for(auto & hash : it->second) {
             _ctx_map_hash.erase(hash);
         }
     }
     _shmid_hash_map.erase(id);
+    _ctx_map_hash_mutex.unlock();
 
     ss_cmd ack = { (uint64_t)ss_proto::SS_ACK, id};
     writeData(_curr_handling_sock, (uint8_t *)&ack, sizeof (ss_cmd));

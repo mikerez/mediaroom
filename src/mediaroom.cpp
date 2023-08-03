@@ -8,6 +8,7 @@
 #include <atomic>
 #include <stdlib.h>
 #include <time.h>
+#include <future>
 
 #include "System.h"
 #include "Ip4.h"
@@ -16,6 +17,8 @@
 #include "PacketPtr.h"
 #include "../libshared/SharedMap.h"
 #include "../libshared/SharedCycleBuffer.h"
+
+#include <boost/crc.hpp>
 
 struct Mediaroom
 {
@@ -120,18 +123,55 @@ int main( int argc, char ** argv )
     RT_ASSERT(z->protocol == 2);  // test nested cast
     
 
-    bool work = true;
-    auto shared_cycle_buff_test_run = [&work](std::string shm_cb_name) {
+    SharedServer shm_server;
+    auto res = shm_server.create();
+    srand(time(nullptr));
 
+    size_t lower = 10, highest = 200;
+    auto shared_cycle_buff_test_run = [&shm_server, &lower, &highest](std::string shm_cb_name) {
+        while(!gExit) {
+            if(!shm_server.hasClients()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                continue;
+            }
+            size_t size = rand() % (highest - lower + 1) + lower;
+            uint8_t * data = new uint8_t[size];
+            for(auto i = sizeof (uint32_t); i < size; i++) {
+                data[i] = rand() % 255;
+            }
+
+
+            // Calc crc to check read errors in app
+            boost::crc_32_type crc;
+            crc.process_bytes(data + sizeof (uint32_t), size - sizeof (uint32_t));
+            uint32_t chechsum = crc.checksum();
+            std::memcpy(data, &chechsum, sizeof (uint32_t));
+
+            LOG_MESS(DEBUG_SYSTEM, "[%s]: Gen data block with size %li (CRC: %u)\n", shm_cb_name.c_str(), size, chechsum);
+
+            if(!shm_server.send(101, data, size))
+            {
+                LOG_WARN(DEBUG_SYSTEM, "Failed to push to SHMEM!\n");
+            }
+
+            delete [] data;
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
     };
 
+#define TEST_THREADS_NUM    10
+    std::vector<std::future<void>> futures;
+    for(auto i = 0; i < TEST_THREADS_NUM; i++) {
+        futures.push_back(std::async(std::launch::async, shared_cycle_buff_test_run, std::string("cb_" + std::to_string(i))));
+    }
 
-    srand(time(nullptr));
-    size_t lower = 10, highest = 200;
-    SharedServer ss;
-    auto res = ss.create();
-    while(res && !gExit) {
-        if(ss.hasClients())
+    for(auto & future : futures) {
+        future.wait();
+    }
+
+
+    /*while(res && !gExit) {
+        if(shm_server.hasClients())
         {
             size_t size = rand() % (highest - lower + 1) + lower;
             uint8_t * data = new uint8_t(size);
@@ -142,14 +182,14 @@ int main( int argc, char ** argv )
 
             LOG_MESS(DEBUG_SYSTEM, "Gen data block with size %li\n", size);
 
-            if(!ss.send(101, data, size))
+            if(!shm_server.send(101, data, size))
             {
                 LOG_WARN(DEBUG_SYSTEM, "Failed to push to SHMEM!\n");
             }
             delete data;
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-    }
+
+    }*/
 
     }
     catch (const std::exception& ex) {

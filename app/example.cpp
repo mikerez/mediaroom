@@ -7,10 +7,23 @@
 #include <unordered_map>
 #include <stdlib.h>
 #include <time.h>
+#include <future>
+#include <vector>
 
-void handleData(const uint8_t * data, const size_t & size)
+#include <boost/crc.hpp>
+
+void handleData(int idx, const uint8_t * data, const size_t & size)
 {
-    LOG_MESS(DEBUG_APP_EXAMPLE, "Read data from SHMEM with size %zu\n", size);
+    LOG_MESS(DEBUG_APP_EXAMPLE, "[%i]: Read data from SHMEM with size %zu\n", idx, size);
+
+    uint32_t checksum;
+    std::memcpy(&checksum, data, sizeof (uint32_t));
+
+    boost::crc_32_type crc;
+    crc.process_bytes(data + sizeof (uint32_t), size - sizeof (uint32_t));
+    if(crc.checksum() != checksum) {
+        LOG_MESS(DEBUG_APP_EXAMPLE, "[%i]: Checksum does not match! In: %u. Calc: %u\n", idx, checksum, crc.checksum());
+    }
 }
 
 int main(int argc, char *argv[])
@@ -56,26 +69,28 @@ int main(int argc, char *argv[])
 
     SharedCircularBuffer * io = new SharedCircularBuffer(shmem_name.c_str(), shmem_size, false);
 
-    auto time_start = std::time(nullptr);
-    while(true)
-    {
-        if(std::time(nullptr) - time_start < 1000)
-        {
+    auto shared_cycle_buff_test_run = [&io](int idx) {
+        while (true) {
             uint16_t data_len = 0;
             auto data = (*io).pop(data_len);
             if(data)
             {
-                handleData(data, data_len);
-                continue;
+                handleData(idx, data, data_len);
+                std::this_thread::sleep_for(std::chrono::milliseconds(30));
+            } else {
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
         }
-        else
-        {
-            LOG_MESS(DEBUG_APP_EXAMPLE, "End data wait loop ...\n");
-            break;
-        }
+    };
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+#define TEST_THREADS_NUM    3
+    std::vector<std::future<void>> futures;
+    for(auto i = 0; i < TEST_THREADS_NUM; i++) {
+        futures.push_back(std::async(std::launch::async, shared_cycle_buff_test_run, i));
+    }
+
+    for(auto & future : futures) {
+        future.wait();
     }
 
     res = sc.closeChan(id);

@@ -70,6 +70,7 @@ class SharedServer: public SharedSocket
      */
     std::unordered_map<shm_id_t, std::vector<hash_t>> _shmid_hash_map;
     // Correspond hash with SharedCtx
+    std::mutex _ctx_map_hash_mutex;
     _ctx_map_hash_t _ctx_map_hash;
     fd_set _main_set;
     fd_set _work_set;
