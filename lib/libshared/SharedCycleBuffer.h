@@ -51,7 +51,7 @@ public:
             throw std::runtime_error(err);
         }
 
-        return _cb.write1(data, length);
+        return _cb.write1(data, length);;
     }
 
     const uint8_t * pop(uint16_t & length)
