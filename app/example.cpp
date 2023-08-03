@@ -54,15 +54,15 @@ int main(int argc, char *argv[])
     sc.waitAck(cmd);
     LOG_MESS(DEBUG_APP_EXAMPLE, "Recv ACK in BIND ...\n");
 
-    SharedCycleBuffer * io = new SharedCycleBuffer(shmem_name.c_str(), shmem_size, false);
+    SharedCircularBuffer * io = new SharedCircularBuffer(shmem_name.c_str(), shmem_size, false);
 
     auto time_start = std::time(nullptr);
     while(true)
     {
-        if(std::time(nullptr) - time_start < 5)
+        if(std::time(nullptr) - time_start < 1000)
         {
             uint16_t data_len = 0;
-            auto data = (*io)->read1(data_len);
+            auto data = (*io).pop(data_len);
             if(data)
             {
                 handleData(data, data_len);
