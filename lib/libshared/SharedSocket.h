@@ -1,3 +1,5 @@
+#pragma once
+
 #include "SharedIO.h"
 
 #include <netinet/in.h>
