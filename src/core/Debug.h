@@ -26,6 +26,10 @@ template <> struct STATIC_ASSERTION_FAILURE<true> {};
 #define DEBUG_SHARED_SERVER     3
 #define DEBUG_SHARED_CLIENT     4
 #define DEBUG_APP_EXAMPLE       5
+#define DEBUG_TCP_ACCUM         6
+#define DEBUG_CAPTURE           7
+#define DEBUG_DRIVER            8
+#define DEBUG_STACK             9
 
 #ifndef NDEBUG
 

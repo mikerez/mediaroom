@@ -90,10 +90,10 @@ class ConfigParser
         std::string name;
     };
 
-    template<typename  TYPE_PTR>
+    template<typename  T>
     struct ConfigParam: public ConfigParamBase
     {
-        ConfigParam(const char* prefix, const char* param, TYPE_PTR value)
+        ConfigParam(const char* prefix, const char* param, T value)
         {
             this->prefix = prefix;
             this->name = param;
@@ -101,12 +101,12 @@ class ConfigParser
         }
         ~ConfigParam() {}
         bool putValue(const char* new_value) {
-            //std::stringstream stream(new_value);
-            //stream >> value;
-
+            std::stringstream stream;
+            stream << new_value;
+            stream >> value;
         }
 
-        TYPE_PTR value;  // must be global var!
+        T value;  // must be global var!
     };
 
     void registerParam() {}

@@ -1,4 +1,6 @@
-﻿#include "SharedSocket.h"
+﻿#pragma once
+
+#include "SharedSocket.h"
 #include "SharedCycleBuffer.h"
 
 

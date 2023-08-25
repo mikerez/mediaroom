@@ -15,6 +15,7 @@
 #include "Config.h"
 #include "PacketDetails.h"
 #include "System.h"
+#include "../TimeHandler.h"
 
 #define MAX_PACKET_SIZE (65536/4)
 
@@ -27,6 +28,7 @@ struct Packet
         L2Mtp3,
         L2Hdlc,
         L2Gfp,
+        L2Lapd
     };
 
     enum Proto  // only things that we probably need for sessions
@@ -85,8 +87,6 @@ struct Packet
             if(next)
                 next->free();
             ::free(this);
-            //delete[](uint8_t*)this->origMemPtr;
-            --pktsCount; // packets counter
         }
     };
 
@@ -142,7 +142,6 @@ inline Packet* allocPacket(size_t length)
     packet->payload_shift = 0;
     packet->caplen = static_cast<uint16_t>(length);  // required by next line
     packet->getDetails()->init();
-    ++pktsCount; // packets counter
     return packet;
 }
 
