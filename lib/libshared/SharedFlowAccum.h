@@ -54,9 +54,12 @@ public:
     ~SharedFlowAccum();
 
     void put(Tcp<Pkt> && pkt, const flow_idx_t &idx, const flow_side_t &side);
-    shm_mmap_it get();
-    void removeHandled(shm_mmap_it it_mmap);
+    shm_mmap_it get(bool & got);
+    void erase(shm_mmap_it it_mmap);
     void markExpiredBlocks();
+
+    shm_mmap_it getLowerBoundBlock(flow_seq_key_t key, bool & got);
+    shm_mmap_it getNextBlock(SharedFlowAccum::shm_mmap_it it_curr_block, bool & got);
 private:
     typedef SharedMultimap<flow_seq_key_t, Block> shm_mmap_t;
     shm_mmap_t _mmap;

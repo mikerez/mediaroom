@@ -37,8 +37,9 @@ void SharedFlowAccum::put(Tcp<Pkt> &&pkt, const flow_idx_t & idx, const flow_sid
     _mmap.unlock();
 }
 
-SharedFlowAccum::shm_mmap_it SharedFlowAccum::get()
+SharedFlowAccum::shm_mmap_it SharedFlowAccum::get(bool & got)
 {
+    got = false;
     _mmap.lock();
     if(_mmap.getMmap()->empty()) {
         return _mmap.getMmap()->end();
@@ -54,6 +55,7 @@ SharedFlowAccum::shm_mmap_it SharedFlowAccum::get()
         // block must exired after marked is_complete == true
         if(it_read->second.is_complete && it_read->second.expired(TimeHandler::Instance()->get_time_usecs())) {
             it_block = it_read;
+            got = true;
         }
 
         it_read++;
@@ -67,7 +69,7 @@ SharedFlowAccum::shm_mmap_it SharedFlowAccum::get()
     return it_block;
 }
 
-void SharedFlowAccum::removeHandled(shm_mmap_it it_mmap)
+void SharedFlowAccum::erase(shm_mmap_it it_mmap)
 {
     _mmap.lock();
     _mmap.getMmap()->erase(it_mmap);
@@ -89,6 +91,50 @@ void SharedFlowAccum::markExpiredBlocks()
     }
 
     _mmap.unlock();
+}
+
+SharedFlowAccum::shm_mmap_it SharedFlowAccum::getLowerBoundBlock(flow_seq_key_t key, bool &got)
+{
+    _mmap.lock();
+    got = false;
+
+    if(_mmap.getMmap()->empty()) {
+        return _mmap.getMmap()->end();
+    }
+
+    auto it_lb_block = _mmap.getMmap()->lower_bound(key);
+    if(it_lb_block != _mmap.getMmap()->end()) {
+        got = true;
+    }
+
+    _mmap.unlock();
+    return it_lb_block;
+}
+
+SharedFlowAccum::shm_mmap_it SharedFlowAccum::getNextBlock(SharedFlowAccum::shm_mmap_it it_curr_block, bool & got)
+{
+    _mmap.lock();
+    got = true;
+    auto it_next_block = _mmap.getMmap()->end();
+
+    if(_mmap.getMmap()->empty()) {
+        got = false;
+        return _mmap.getMmap()->end();
+    }
+
+    if(std::next(it_curr_block) == _mmap.getMmap()->end()) {
+        it_next_block = _mmap.getMmap()->begin();
+    }
+    else {
+        it_next_block = std::next(it_curr_block);
+    }
+
+    if(it_next_block == it_curr_block) {
+        got = false;
+    }
+
+    _mmap.unlock();
+    return it_next_block;
 }
 
 void SharedFlowAccum::create_flow_block(active_flow_ctx_it it_flow_ctx, const FlowSeqKeyCtx & key_ctx)
