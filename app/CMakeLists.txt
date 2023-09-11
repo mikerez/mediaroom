@@ -6,6 +6,8 @@ include_directories (../lib/libstack)
 include_directories (core)
 
 set(SRCS
+    SharedFlowDistributor.cpp
+    SharedFlowHandler.cpp
     ../src/core/Debug.cpp
     ../lib/libshared/SharedClient.cpp
     ../lib/libshared/SharedSocket.cpp

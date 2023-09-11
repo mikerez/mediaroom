@@ -71,34 +71,6 @@ public:
         dst = std::stol(str, 0, 0);
     }
 
-/* need this???
-    template< typename T >
-    static void convert(std::pair<T, T>& dst, const std::string& str)
-    {
-        // available format: [+-]<digits>-[+-]<digits>
-        //  [+-]     - optionally '+' or '-'
-        //  <digits> - one or more digit
-        // all spaces are ignored
-        bool ok = false;
-        // delete all spaces
-        std::string s = str;
-        s.erase(std::remove_if(s.begin(), s.end(),
-                               [](char c){ return ::isspace(c); }),
-                s.end());
-        if (s.size() >= 3) {
-            size_t offs = s.find('-', 1);
-            if (offs != std::string::npos) {
-                convert(dst.first,  str.substr(0, offs));
-                convert(dst.second, str.substr(offs + 1));
-                ok = true;
-            }
-        }
-        if (!ok) {
-            LOG_ERR(LOG_SYSTEM, "wrong pair parameter: %s\n", str.c_str());
-        }
-    }
-*/
-
     template<class Config, typename... Args>
     void loadConfig(Args... columns)
     {
